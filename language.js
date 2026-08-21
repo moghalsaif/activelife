@@ -15,12 +15,17 @@
   let translationRun = 0;
   let toastTimer;
 
+  const supportsPrivateTranslation = "Translator" in window && window.isSecureContext;
+  select.closest(".language-control")?.setAttribute("data-translation-support", supportsPrivateTranslation ? "available" : "unavailable");
+  select.title = supportsPrivateTranslation
+    ? "On-device translation beta"
+    : "On-device translation is not supported by this browser";
   select.addEventListener("change", () => changeLanguage(select.value));
 
   window.PATHWAY_LANGUAGE = {
     getLanguage: () => currentLanguage,
-    refresh: () => refreshVisibleContent(),
-    translateElement,
+    refresh: () => safelyRefreshVisibleContent(),
+    translateElement: (root) => safelyTranslateElement(root),
     translateForDisplay: (text) => translateText(text, "en", currentLanguage),
     translateToEnglish: (text) => translateText(text, currentLanguage, "en"),
   };
@@ -33,12 +38,14 @@
       document.documentElement.dir = "ltr";
       restoreVisibleContent();
       setStatus(false);
+      setTranslationBusy(false);
       document.dispatchEvent(new CustomEvent("pathway:languagechange", { detail: { language: "en" } }));
       showToast("Language changed to English.");
       return;
     }
 
     setStatus(true, "Preparing private translation…");
+    setTranslationBusy(true);
     try {
       await getTranslator("en", targetLanguage, updateDownloadProgress);
       if (run !== translationRun) return;
@@ -48,20 +55,43 @@
       await refreshVisibleContent(run);
       if (run !== translationRun) return;
       setStatus(false);
+      setTranslationBusy(false);
       document.dispatchEvent(new CustomEvent("pathway:languagechange", { detail: { language: targetLanguage } }));
       const label = select.options[select.selectedIndex]?.textContent || targetLanguage;
       showToast(`${label} is ready. English wording remains the scoring source.`);
     } catch (error) {
       if (run !== translationRun) return;
-      currentLanguage = "en";
-      select.value = "en";
-      document.documentElement.lang = "en";
-      document.documentElement.dir = "ltr";
-      restoreVisibleContent();
-      setStatus(false);
-      document.dispatchEvent(new CustomEvent("pathway:languagechange", { detail: { language: "en" } }));
-      showToast("Private translation is not available in this browser. Use desktop Chrome 138 or newer.");
+      restoreEnglishAfterFailure();
     }
+  }
+
+  async function safelyRefreshVisibleContent() {
+    try {
+      await refreshVisibleContent();
+    } catch (_) {
+      restoreEnglishAfterFailure();
+    }
+  }
+
+  async function safelyTranslateElement(root) {
+    try {
+      await translateElement(root);
+    } catch (_) {
+      restoreEnglishAfterFailure();
+    }
+  }
+
+  function restoreEnglishAfterFailure() {
+    ++translationRun;
+    currentLanguage = "en";
+    select.value = "en";
+    document.documentElement.lang = "en";
+    document.documentElement.dir = "ltr";
+    restoreVisibleContent();
+    setStatus(false);
+    setTranslationBusy(false);
+    document.dispatchEvent(new CustomEvent("pathway:languagechange", { detail: { language: "en" } }));
+    showToast("Private on-device translation is not available for that language in this browser. English was restored.");
   }
 
   async function refreshVisibleContent(run = translationRun) {
@@ -192,6 +222,12 @@
     status.querySelector("strong").textContent = message;
     status.classList.toggle("is-visible", visible);
     status.setAttribute("aria-hidden", String(!visible));
+    status.setAttribute("aria-busy", String(visible));
+  }
+
+  function setTranslationBusy(busy) {
+    select.disabled = busy;
+    select.setAttribute("aria-busy", String(busy));
   }
 
   function showToast(message) {

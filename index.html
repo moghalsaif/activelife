@@ -7,6 +7,17 @@
       name="description"
       content="A clear, guided 75-question adult health and lifestyle assessment based on the supplied PATH CLAPSCAN document."
     />
+    <meta name="theme-color" content="#fbf8ee" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Pathway — Health & lifestyle check-in" />
+    <meta property="og:description" content="A private, Miko-guided health and lifestyle assessment with up to 75 questions." />
+    <meta property="og:image" content="https://activelife-eight.vercel.app/assets/og-pathway.webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Pathway — Health & lifestyle check-in" />
+    <meta name="twitter:description" content="A private, Miko-guided health and lifestyle assessment with up to 75 questions." />
+    <meta name="twitter:image" content="https://activelife-eight.vercel.app/assets/og-pathway.webp" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23157c72'/%3E%3Cpath d='M32 50C21 43 15 34 15 25a11 11 0 0 1 17-9 11 11 0 0 1 17 9c0 9-6 18-17 25Z' fill='%23dff1e9'/%3E%3Cpath d='M32 43V23m0 8-7-5m7 10 8-6' fill='none' stroke='%230d625b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
     <title>Pathway — Health & Lifestyle Check-in</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,6 +30,7 @@
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to assessment</a>
+    <noscript><div class="noscript-notice" role="alert">Pathway needs JavaScript to run the assessment. Enable JavaScript, then reload this page.</div></noscript>
 
     <header class="site-header">
       <a class="brand" href="#" aria-label="Pathway home">
@@ -35,6 +47,7 @@
         <label class="language-control" for="language-select">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.2-2.4 3.4-5.4 3.4-9S14.2 5.4 12 3m0 18c-2.2-2.4-3.4-5.4-3.4-9S9.8 5.4 12 3M3.5 9h17m-17 6h17" /></svg>
           <span class="sr-only">Language</span>
+          <span class="language-beta" data-no-translate>Beta</span>
           <select id="language-select" aria-label="Choose language" data-no-translate>
             <option value="en">English</option>
             <option value="ar">العربية</option>
@@ -97,10 +110,11 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
             </button>
             <button class="secondary-button is-hidden" id="resume-button" type="button">Resume saved check-in</button>
+            <button class="clear-data-link is-hidden" id="clear-data-button" type="button">Clear saved answers</button>
           </div>
 
           <div class="welcome-facts" aria-label="Assessment details">
-            <span>About 15–20 minutes</span><i></i><span>Saved on this device</span>
+            <span>About 15–20 minutes</span><i></i><span id="storage-status-text" aria-live="polite">Saved on this device</span>
           </div>
 
           <div class="safety-note">
@@ -144,21 +158,21 @@
               <div class="field-group">
                 <label for="age">Age</label>
                 <div class="input-with-unit">
-                  <input id="age" name="age" type="number" min="18" max="110" inputmode="numeric" placeholder="38" required />
+                  <input id="age" name="age" type="number" min="18" max="110" inputmode="numeric" placeholder="38" aria-describedby="age-error" required />
                   <span>years</span>
                 </div>
-                <span class="field-error" id="age-error"></span>
+                <span class="field-error" id="age-error" role="alert"></span>
               </div>
 
               <div class="field-group">
                 <label for="source-sex">Reference range</label>
-                <select id="source-sex" name="sourceSex" required>
+                <select id="source-sex" name="sourceSex" aria-describedby="source-sex-error" required>
                   <option value="">Choose one</option>
                   <option value="female">Female</option>
                   <option value="male">Male</option>
                   <option value="unspecified">Skip sex-based ranges</option>
                 </select>
-                <span class="field-error" id="source-sex-error"></span>
+                <span class="field-error" id="source-sex-error" role="alert"></span>
               </div>
             </div>
 
@@ -166,26 +180,28 @@
               <div class="field-group">
                 <label for="height">Height <span>Optional</span></label>
                 <div class="input-with-unit">
-                  <input id="height" name="height" type="number" min="100" max="240" inputmode="decimal" placeholder="170" />
+                  <input id="height" name="height" type="number" min="100" max="240" inputmode="decimal" placeholder="170" aria-describedby="height-error" />
                   <span>cm</span>
                 </div>
+                <span class="field-error" id="height-error" role="alert"></span>
               </div>
 
               <div class="field-group">
                 <label for="weight">Weight <span>Optional</span></label>
                 <div class="input-with-unit">
-                  <input id="weight" name="weight" type="number" min="25" max="350" inputmode="decimal" placeholder="70" />
+                  <input id="weight" name="weight" type="number" min="25" max="350" inputmode="decimal" placeholder="70" aria-describedby="weight-error" />
                   <span>kg</span>
                 </div>
+                <span class="field-error" id="weight-error" role="alert"></span>
               </div>
             </div>
 
             <label class="consent-check">
-              <input id="consent" name="consent" type="checkbox" required />
+              <input id="consent" name="consent" type="checkbox" aria-describedby="consent-error" required />
               <span class="custom-check" aria-hidden="true"></span>
               <span>I understand this is a screening, not a diagnosis.</span>
             </label>
-            <span class="field-error" id="consent-error"></span>
+            <span class="field-error" id="consent-error" role="alert"></span>
 
             <button class="primary-button form-submit" type="submit">
               Start the assessment
@@ -222,7 +238,7 @@
                 Sensitive
               </span>
             </div>
-            <h2 id="question-title"></h2>
+            <h2 id="question-title" tabindex="-1"></h2>
             <p class="question-context" id="question-context"></p>
 
             <aside class="miko-question-note" id="miko-question-note" aria-labelledby="miko-note-label">
@@ -360,6 +376,11 @@
       </section>
     </main>
 
+    <footer class="site-footer">
+      <p>Pathway stores assessment answers only in this browser.</p>
+      <button class="text-button" id="privacy-button" type="button">Privacy & safety</button>
+    </footer>
+
     <dialog class="method-dialog" id="method-dialog">
       <form method="dialog">
         <button class="icon-button dialog-close" value="close" aria-label="Close scoring explanation">
@@ -390,6 +411,37 @@
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel">Keep going</button>
           <button class="primary-button" id="confirm-exit-button" value="exit">Exit for now</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="privacy-dialog" id="privacy-dialog" aria-labelledby="privacy-title">
+      <form method="dialog">
+        <button class="icon-button dialog-close" value="close" aria-label="Close privacy information">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </form>
+      <span class="eyebrow"><span></span> Private by design</span>
+      <h2 id="privacy-title">Your answers stay on this device.</h2>
+      <ul class="privacy-list">
+        <li><strong>No account or upload.</strong><span>Your profile, answers, and results are saved only in this browser’s local storage.</span></li>
+        <li><strong>Miko is a local guide.</strong><span>The chat uses prepared assessment guidance and does not send your questions to an AI service.</span></li>
+        <li><strong>Translation is optional.</strong><span>When supported, your browser translates on-device. English remains the scoring source.</span></li>
+        <li><strong>Shared device?</strong><span>Clear saved answers when you finish so another person cannot resume your check-in.</span></li>
+      </ul>
+      <button class="secondary-button privacy-clear-button" id="privacy-clear-button" type="button">Clear saved answers</button>
+    </dialog>
+
+    <dialog class="clear-dialog" id="clear-data-dialog" aria-labelledby="clear-data-title">
+      <form method="dialog">
+        <span class="exit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.1c0 4.7 3 8.4 7.5 9.9 4.5-1.5 7.5-5.2 7.5-9.9V6L12 3Z" /></svg>
+        </span>
+        <h2 id="clear-data-title">Clear your saved answers?</h2>
+        <p>This permanently removes your profile, assessment answers, and result from this browser.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel">Keep my answers</button>
+          <button class="danger-button" id="confirm-clear-data-button" type="button">Clear saved data</button>
         </div>
       </form>
     </dialog>
@@ -427,9 +479,16 @@
     <div class="translation-status" id="translation-status" role="status" aria-live="polite" aria-hidden="true">
       <span></span><strong>Changing language…</strong>
     </div>
+    <div class="app-alert" id="app-alert" role="alert" hidden>
+      <strong>Pathway hit a problem.</strong>
+      <span>Your saved answers are still on this device. Reload the page to continue.</span>
+      <button id="app-reload-button" type="button">Reload</button>
+    </div>
 
+    <script src="runtime.js"></script>
     <script src="assessment-data.js"></script>
     <script src="language.js"></script>
+    <script src="miko-logic.js"></script>
     <script src="miko.js"></script>
     <script src="app.js"></script>
   </body>

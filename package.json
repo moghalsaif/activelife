@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "check": "node --check runtime.js && node --check assessment-data.js && node --check language.js && node --check miko-logic.js && node --check miko.js && node --check app.js",
+    "test": "npm run check && node tests/integrity.mjs"
   }
 }

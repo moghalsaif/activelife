@@ -2,7 +2,10 @@
   "use strict";
 
   const data = window.ASSESSMENT_DATA;
-  if (!data) throw new Error("Assessment data failed to load.");
+  if (!data) {
+    window.PATHWAY_REPORT_ERROR?.();
+    throw new Error("Assessment data failed to load.");
+  }
 
   const STORAGE_KEY = "pathway-health-check-v1";
   const screens = {
@@ -15,6 +18,13 @@
   const els = {
     begin: document.getElementById("begin-button"),
     resume: document.getElementById("resume-button"),
+    clearData: document.getElementById("clear-data-button"),
+    clearDataDialog: document.getElementById("clear-data-dialog"),
+    confirmClearData: document.getElementById("confirm-clear-data-button"),
+    privacyButton: document.getElementById("privacy-button"),
+    privacyDialog: document.getElementById("privacy-dialog"),
+    privacyClear: document.getElementById("privacy-clear-button"),
+    storageStatus: document.getElementById("storage-status-text"),
     profileBack: document.getElementById("profile-back-button"),
     profileForm: document.getElementById("profile-form"),
     firstName: document.getElementById("first-name"),
@@ -25,6 +35,8 @@
     consent: document.getElementById("consent"),
     ageError: document.getElementById("age-error"),
     sourceSexError: document.getElementById("source-sex-error"),
+    heightError: document.getElementById("height-error"),
+    weightError: document.getElementById("weight-error"),
     consentError: document.getElementById("consent-error"),
     exit: document.getElementById("exit-button"),
     exitDialog: document.getElementById("exit-dialog"),
@@ -53,6 +65,7 @@
     chatMessages: document.getElementById("chat-messages"),
     chatForm: document.getElementById("chat-form"),
     chatInput: document.getElementById("chat-input"),
+    chatSend: document.querySelector("#chat-form button[type='submit']"),
     quickPrompts: document.getElementById("quick-prompts"),
     methodDialog: document.getElementById("method-dialog"),
     resultsMethodButton: document.getElementById("results-method-button"),
@@ -80,16 +93,18 @@
     sound: true,
   });
 
+  let storageAvailable = canUseStorage();
+  let storageWarningShown = false;
   let state = loadState() || emptyState();
   let activeQuestions = getActiveQuestions();
   let toastTimer;
   let buddyTimer;
+  let questionChatBusy = false;
 
   init();
 
   function init() {
-    els.resume.classList.toggle("is-hidden", !hasMeaningfulProgress());
-    if (state.completed) els.resume.textContent = "View saved result";
+    updateSavedDataControls();
     els.soundButton.setAttribute("aria-pressed", String(state.sound));
     els.soundButton.setAttribute("aria-label", state.sound ? "Turn sound off" : "Turn sound on");
 
@@ -118,11 +133,17 @@
 
     els.profileBack.addEventListener("click", () => showScreen("welcome"));
     els.profileForm.addEventListener("submit", handleProfileSubmit);
+    els.clearData.addEventListener("click", openClearDataDialog);
+    els.privacyButton.addEventListener("click", () => els.privacyDialog.showModal());
+    els.privacyClear.addEventListener("click", () => {
+      els.privacyDialog.close();
+      openClearDataDialog();
+    });
+    els.confirmClearData.addEventListener("click", clearSavedData);
     els.exit.addEventListener("click", () => els.exitDialog.showModal());
     els.confirmExit.addEventListener("click", () => {
       saveState();
-      els.resume.classList.remove("is-hidden");
-      els.resume.textContent = "Resume saved check-in";
+      updateSavedDataControls();
       showScreen("welcome");
     });
 
@@ -147,8 +168,7 @@
 
     els.soundButton.addEventListener("click", toggleSound);
     els.resultsHome.addEventListener("click", () => {
-      els.resume.classList.remove("is-hidden");
-      els.resume.textContent = "View saved result";
+      updateSavedDataControls();
       showScreen("welcome");
     });
     els.download.addEventListener("click", printSummary);
@@ -157,6 +177,14 @@
     document.addEventListener("keydown", handleKeyboard);
     window.addEventListener("beforeunload", saveState);
     window.addEventListener("resize", handleViewportChange);
+  }
+
+  function openClearDataDialog() {
+    if (!hasMeaningfulProgress()) {
+      showToast("There are no saved answers to clear.");
+      return;
+    }
+    els.clearDataDialog.showModal();
   }
 
   function showScreen(name) {
@@ -182,12 +210,28 @@
     const age = Number(els.age.value);
     const validAge = age >= 18 && age <= 110;
     const validSex = Boolean(els.sourceSex.value);
+    const height = Number(els.height.value);
+    const weight = Number(els.weight.value);
+    const validHeight = !els.height.value || (height >= 100 && height <= 240);
+    const validWeight = !els.weight.value || (weight >= 25 && weight <= 350);
     const validConsent = els.consent.checked;
 
     els.ageError.textContent = validAge ? "" : "Enter an age between 18 and 110.";
     els.sourceSexError.textContent = validSex ? "" : "Choose the source pathway that fits best.";
+    els.heightError.textContent = validHeight ? "" : "Enter a height between 100 and 240 cm, or leave it blank.";
+    els.weightError.textContent = validWeight ? "" : "Enter a weight between 25 and 350 kg, or leave it blank.";
     els.consentError.textContent = validConsent ? "" : "Please confirm before starting.";
-    if (!validAge || !validSex || !validConsent) return;
+    els.age.setAttribute("aria-invalid", String(!validAge));
+    els.sourceSex.setAttribute("aria-invalid", String(!validSex));
+    els.height.setAttribute("aria-invalid", String(!validHeight));
+    els.weight.setAttribute("aria-invalid", String(!validWeight));
+    els.consent.setAttribute("aria-invalid", String(!validConsent));
+    if (!validAge || !validSex || !validHeight || !validWeight || !validConsent) {
+      const firstInvalid = [els.age, els.sourceSex, els.height, els.weight, els.consent].find((field) => field.getAttribute("aria-invalid") === "true");
+      firstInvalid?.focus();
+      playTone("error");
+      return;
+    }
 
     const previousSex = state.profile.sourceSex;
     state.profile = {
@@ -210,6 +254,7 @@
     state.currentIndex = clamp(state.currentIndex, 0, activeQuestions.length - 1);
     state.completed = false;
     saveState();
+    updateSavedDataControls();
     playTone("advance");
     showScreen("quiz");
     prepareGuideForViewport();
@@ -235,7 +280,7 @@
     const progress = ((state.currentIndex + 1) / activeQuestions.length) * 100;
     els.sectionLabel.textContent = data.categories[question.category].label;
     els.progressLabel.textContent = `${state.currentIndex + 1} of ${activeQuestions.length}`;
-    els.progressFill.style.width = `${progress}%`;
+    els.progressFill.style.transform = `scaleX(${progress / 100})`;
     els.progressTrack.setAttribute("aria-valuemax", String(activeQuestions.length));
     els.progressTrack.setAttribute("aria-valuenow", String(state.currentIndex + 1));
     els.questionNumber.textContent = `Question ${question.id}`;
@@ -260,6 +305,7 @@
     renderFollowup();
     if (resetChat) resetChatForQuestion(question);
     window.PATHWAY_LANGUAGE?.refresh();
+    window.requestAnimationFrame(() => els.questionTitle.focus({ preventScroll: true }));
   }
 
   function getOptions(question) {
@@ -422,6 +468,7 @@
     if (state.currentIndex >= activeQuestions.length - 1) {
       state.completed = true;
       saveState();
+      updateSavedDataControls();
       playTone("complete");
       renderResults();
       showScreen("results");
@@ -433,7 +480,6 @@
     playTone("advance");
     renderQuestion(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
-    els.questionTitle.focus?.();
   }
 
   function previousQuestion() {
@@ -447,7 +493,7 @@
 
   function handleKeyboard(event) {
     if (!screens.quiz.classList.contains("is-active")) return;
-    if (els.methodDialog.open || els.exitDialog.open) return;
+    if (document.querySelector("dialog[open]")) return;
     if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
 
     const number = Number(event.key);
@@ -504,7 +550,8 @@
     addChatMessage(`Here’s my note for question ${question.id}${name}: ${question.help} Ask me if you want the wording, reason, or answer choices explained.`);
   }
 
-  function handleQuickPrompt(event) {
+  async function handleQuickPrompt(event) {
+    if (questionChatBusy) return;
     const button = event.target.closest("button[data-prompt]");
     if (!button) return;
     const prompts = {
@@ -515,11 +562,18 @@
     const text = prompts[button.dataset.prompt];
     addChatMessage(button.textContent.trim() || text, true);
     animateBuddy("thinking");
-    window.setTimeout(() => replyAsMiko(button.dataset.prompt), 240);
+    setQuestionChatBusy(true);
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 240));
+      replyAsMiko(button.dataset.prompt);
+    } finally {
+      setQuestionChatBusy(false);
+    }
   }
 
   async function handleChatSubmit(event) {
     event.preventDefault();
+    if (questionChatBusy) return;
     const message = els.chatInput.value.trim();
     if (!message) return;
     addChatMessage(message, true);
@@ -532,15 +586,22 @@
     } catch (_) {
       normalized = message.toLowerCase();
     }
-    let intent = "fallback";
-    if (/why|reason|matter|included|ask/.test(normalized)) intent = "why";
-    else if (/mean|explain|understand|term|what is|what does/.test(normalized)) intent = "meaning";
-    else if (/answer|choose|select|not sure|don't know|guess/.test(normalized)) intent = "answer";
-    else if (/score|point|result|rating|calculate/.test(normalized)) intent = "score";
-    else if (/private|privacy|save|stored|data/.test(normalized)) intent = "privacy";
-    else if (/doctor|diagnos|treat|medicine|medication|should i stop/.test(normalized)) intent = "medical";
-    else if (/emergency|chest pain|can't breathe|cannot breathe|fainting/.test(normalized)) intent = "urgent";
-    window.setTimeout(() => replyAsMiko(intent), 240);
+    const intent = window.MIKO_GUIDE?.detectQuestionIntent(normalized) || "fallback";
+    setQuestionChatBusy(true);
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 240));
+      replyAsMiko(intent);
+    } finally {
+      setQuestionChatBusy(false);
+    }
+  }
+
+  function setQuestionChatBusy(busy) {
+    questionChatBusy = busy;
+    els.chatForm.setAttribute("aria-busy", String(busy));
+    els.chatInput.disabled = busy;
+    els.chatSend.disabled = busy;
+    els.quickPrompts.querySelectorAll("button").forEach((button) => { button.disabled = busy; });
   }
 
   function replyAsMiko(intent) {
@@ -550,7 +611,7 @@
       why: question.why,
       answer: `Answer for your usual or current situation, using the timeframe in the question. Choose “Not sure” when it is available rather than guessing. Optional detail fields can be left blank.`,
       score: `The source uses 3 points for the most health-supportive answer, 2 for an uncertain or middle answer, and 1 for a risk answer. Some safety-critical areas use a stricter flag when one risk answer appears.`,
-      privacy: `Your answers are saved only in this browser’s local storage so you can resume. This prototype does not send them to a server. You can clear them by choosing “Retake assessment.”`,
+      privacy: `Your answers are saved only in this browser’s local storage so you can resume. They are not sent to a server. You can clear them from the home screen or after viewing your result.`,
       medical: `I can explain this assessment’s wording and logic, but I can’t diagnose, change medication, or recommend treatment. Keep taking prescribed medication unless your clinician tells you otherwise.`,
       urgent: `If you have severe chest pain, major breathing difficulty, fainting, or another urgent symptom, stop the assessment and seek emergency medical help now.`,
       fallback: `I can help with the current question’s meaning, why it is included, how to answer without guessing, privacy, or scoring. For personal diagnosis or treatment, please speak with a qualified healthcare professional.`,
@@ -753,15 +814,24 @@
   }
 
   function resetAssessment() {
+    resetLocalState("profile", "Previous answers cleared. You can start fresh.");
+  }
+
+  function clearSavedData() {
+    els.clearDataDialog.close();
+    resetLocalState("welcome", "Your saved profile, answers, and result were cleared.");
+  }
+
+  function resetLocalState(destination, message) {
     const keepSound = state.sound;
     state = emptyState();
     state.sound = keepSound;
     activeQuestions = getActiveQuestions();
-    localStorage.removeItem(STORAGE_KEY);
-    els.resume.classList.add("is-hidden");
+    removeSavedState();
     populateProfile();
-    showScreen("profile");
-    showToast("Previous answers cleared. You can start fresh.");
+    updateSavedDataControls();
+    showScreen(destination);
+    showToast(message);
   }
 
   function toggleSound() {
@@ -799,22 +869,109 @@
   }
 
   function saveState() {
+    if (!storageAvailable) {
+      warnStorageUnavailable();
+      return false;
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
     } catch (_) {
-      // The assessment continues even if private browsing disables local storage.
+      storageAvailable = false;
+      updateSavedDataControls();
+      warnStorageUnavailable();
+      return false;
     }
   }
 
   function loadState() {
+    if (!storageAvailable) return null;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
+      if (raw.length > 250000) throw new Error("Saved assessment is unexpectedly large.");
       const parsed = JSON.parse(raw);
-      return { ...emptyState(), ...parsed, profile: { ...emptyState().profile, ...(parsed.profile || {}) } };
+      return sanitizeLoadedState(parsed);
     } catch (_) {
+      removeSavedState();
       return null;
     }
+  }
+
+  function sanitizeLoadedState(parsed) {
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const clean = emptyState();
+    const profile = parsed.profile && typeof parsed.profile === "object" ? parsed.profile : {};
+    const age = Number(profile.age);
+    const height = Number(profile.height);
+    const weight = Number(profile.weight);
+    clean.profile = {
+      firstName: typeof profile.firstName === "string" ? profile.firstName.trim().slice(0, 40) : "",
+      age: age >= 18 && age <= 110 ? age : "",
+      sourceSex: ["female", "male", "unspecified"].includes(profile.sourceSex) ? profile.sourceSex : "",
+      height: height >= 100 && height <= 240 ? height : "",
+      weight: weight >= 25 && weight <= 350 ? weight : "",
+      consent: Boolean(profile.consent),
+    };
+
+    const eligibleQuestions = data.questions.filter((question) => !question.womenOnly || clean.profile.sourceSex === "female");
+    const savedAnswers = parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {};
+    const savedDetails = parsed.details && typeof parsed.details === "object" ? parsed.details : {};
+    eligibleQuestions.forEach((question) => {
+      const answer = savedAnswers[question.id];
+      if (getOptions(question).some((option) => option.value === answer)) clean.answers[question.id] = answer;
+      const detail = sanitizeDetail(savedDetails[question.id]);
+      if (detail && typeof detail === "object") clean.details[question.id] = detail;
+    });
+
+    const maxIndex = Math.max(eligibleQuestions.length - 1, 0);
+    clean.currentIndex = clamp(Number.isFinite(Number(parsed.currentIndex)) ? Math.trunc(Number(parsed.currentIndex)) : 0, 0, maxIndex);
+    clean.completed = Boolean(parsed.completed && eligibleQuestions.length && eligibleQuestions.every((question) => clean.answers[question.id]));
+    clean.sound = parsed.sound !== false;
+    return clean;
+  }
+
+  function sanitizeDetail(value, depth = 0) {
+    if (depth > 3 || value === null || value === undefined) return null;
+    if (typeof value === "string") return value.slice(0, 120);
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+    if (typeof value === "boolean") return value;
+    if (Array.isArray(value)) return value.slice(0, 20).map((item) => sanitizeDetail(item, depth + 1)).filter((item) => item !== null);
+    if (typeof value !== "object") return null;
+    return Object.fromEntries(Object.entries(value).slice(0, 30).map(([key, item]) => [key.slice(0, 80), sanitizeDetail(item, depth + 1)]).filter(([, item]) => item !== null));
+  }
+
+  function canUseStorage() {
+    try {
+      const testKey = `${STORAGE_KEY}-test`;
+      localStorage.setItem(testKey, "1");
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function removeSavedState() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (_) {
+      storageAvailable = false;
+    }
+  }
+
+  function updateSavedDataControls() {
+    const hasProgress = hasMeaningfulProgress();
+    els.resume.classList.toggle("is-hidden", !hasProgress);
+    els.clearData.classList.toggle("is-hidden", !hasProgress);
+    if (hasProgress) els.resume.textContent = state.completed ? "View saved result" : "Resume saved check-in";
+    els.storageStatus.textContent = storageAvailable ? "Saved on this device" : "Session only—saving unavailable";
+  }
+
+  function warnStorageUnavailable() {
+    if (storageWarningShown) return;
+    storageWarningShown = true;
+    showToast("This browser cannot save progress. Keep this tab open until you finish.");
   }
 
   function hasMeaningfulProgress() {
