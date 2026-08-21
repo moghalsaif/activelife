@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A clear, guided 75-question adult health and lifestyle assessment based on the supplied PATH CLAPSCAN document."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23157c72'/%3E%3Cpath d='M32 50C21 43 15 34 15 25a11 11 0 0 1 17-9 11 11 0 0 1 17 9c0 9-6 18-17 25Z' fill='%23dff1e9'/%3E%3Cpath d='M32 43V23m0 8-7-5m7 10 8-6' fill='none' stroke='%230d625b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <title>Pathway — Health & Lifestyle Check-in</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to assessment</a>
+
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Pathway home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 28 28" role="img">
+            <path d="M14 24.5c5-3 8.4-7.2 8.4-12.1A5.4 5.4 0 0 0 17 7c-1.3 0-2.4.4-3 1.2A4.6 4.6 0 0 0 11 7a5.4 5.4 0 0 0-5.4 5.4c0 4.9 3.4 9.1 8.4 12.1Z" />
+            <path d="M14 20.5v-9m0 3.1-3-2.2m3 4.9 3.5-2.7" class="brand-mark-line" />
+          </svg>
+        </span>
+        <span>Pathway</span>
+      </a>
+
+      <div class="header-actions">
+        <label class="language-control" for="language-select">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.2-2.4 3.4-5.4 3.4-9S14.2 5.4 12 3m0 18c-2.2-2.4-3.4-5.4-3.4-9S9.8 5.4 12 3M3.5 9h17m-17 6h17" /></svg>
+          <span class="sr-only">Language</span>
+          <select id="language-select" aria-label="Choose language" data-no-translate>
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+            <option value="bn">বাংলা</option>
+            <option value="zh">中文（简体）</option>
+            <option value="zh-Hant">中文（繁體）</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="hi">हिन्दी</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="it">Italiano</option>
+            <option value="ja">日本語</option>
+            <option value="kn">ಕನ್ನಡ</option>
+            <option value="ko">한국어</option>
+            <option value="mr">मराठी</option>
+            <option value="pt">Português</option>
+            <option value="ru">Русский</option>
+            <option value="es">Español</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+            <option value="th">ไทย</option>
+            <option value="tr">Türkçe</option>
+            <option value="uk">Українська</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="bg">Български</option>
+            <option value="cs">Čeština</option>
+            <option value="da">Dansk</option>
+            <option value="nl">Nederlands</option>
+            <option value="fi">Suomi</option>
+            <option value="el">Ελληνικά</option>
+            <option value="iw">עברית</option>
+            <option value="hr">Hrvatski</option>
+            <option value="hu">Magyar</option>
+            <option value="lt">Lietuvių</option>
+            <option value="no">Norsk</option>
+            <option value="pl">Polski</option>
+            <option value="ro">Română</option>
+            <option value="sk">Slovenčina</option>
+            <option value="sl">Slovenščina</option>
+            <option value="sv">Svenska</option>
+          </select>
+        </label>
+        <button class="icon-button" id="sound-button" type="button" aria-label="Turn sound off" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6.8 8.5H3.5v7h3.3L11 19V5Zm4.3 3.2a5.4 5.4 0 0 1 0 7.6M17.8 5.6a9 9 0 0 1 0 12.8" /></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="screen welcome-screen is-active" id="welcome-screen" aria-labelledby="welcome-title">
+        <div class="welcome-copy">
+          <h1 id="welcome-title">Understand your <em>health habits.</em></h1>
+          <p class="welcome-lede">
+            A private 75-question check-in. Miko explains anything that feels unclear.
+          </p>
+
+          <div class="welcome-actions">
+            <button class="primary-button" id="begin-button" type="button">
+              Start assessment
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+            <button class="secondary-button is-hidden" id="resume-button" type="button">Resume saved check-in</button>
+          </div>
+
+          <div class="welcome-facts" aria-label="Assessment details">
+            <span>About 15–20 minutes</span><i></i><span>Saved on this device</span>
+          </div>
+
+          <div class="safety-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.1c0 4.7 3 8.4 7.5 9.9 4.5-1.5 7.5-5.2 7.5-9.9V6L12 3Zm0 5v4m0 3.2v.1" /></svg>
+            <p>Wellness screening only—not a diagnosis.</p>
+          </div>
+        </div>
+
+        <div class="welcome-visual">
+          <button class="welcome-miko-button" id="welcome-miko-button" type="button" data-open-miko aria-label="Ask Miko a question">
+            <span class="miko-spark spark-one" aria-hidden="true"></span>
+            <span class="miko-spark spark-two" aria-hidden="true"></span>
+            <img src="assets/miko-buddy-crop.webp" alt="Miko, a small mint-green wellness buddy waving hello" />
+            <span class="welcome-bubble"><strong>Need help?</strong> Ask Miko</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="screen profile-screen" id="profile-screen" aria-labelledby="profile-title">
+        <div class="profile-layout">
+          <div class="profile-intro">
+            <button class="back-link" id="profile-back-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              Back
+            </button>
+            <h2 id="profile-title">A few details first.</h2>
+            <p>This applies the assessment’s original reference ranges. Your information stays in this browser.</p>
+            <button class="profile-companion" type="button" data-open-miko aria-label="Ask Miko about the assessment">
+              <img src="assets/miko-buddy-crop.webp" alt="" />
+              <span><strong>Miko is here</strong><small>Tap to ask a question</small></span>
+            </button>
+          </div>
+
+          <form class="profile-form" id="profile-form" novalidate>
+            <div class="field-group">
+              <label for="first-name">First name <span>Optional</span></label>
+              <input id="first-name" name="firstName" type="text" autocomplete="given-name" maxlength="40" placeholder="Your first name" />
+            </div>
+
+            <div class="field-grid">
+              <div class="field-group">
+                <label for="age">Age</label>
+                <div class="input-with-unit">
+                  <input id="age" name="age" type="number" min="18" max="110" inputmode="numeric" placeholder="38" required />
+                  <span>years</span>
+                </div>
+                <span class="field-error" id="age-error"></span>
+              </div>
+
+              <div class="field-group">
+                <label for="source-sex">Reference range</label>
+                <select id="source-sex" name="sourceSex" required>
+                  <option value="">Choose one</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="unspecified">Skip sex-based ranges</option>
+                </select>
+                <span class="field-error" id="source-sex-error"></span>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field-group">
+                <label for="height">Height <span>Optional</span></label>
+                <div class="input-with-unit">
+                  <input id="height" name="height" type="number" min="100" max="240" inputmode="decimal" placeholder="170" />
+                  <span>cm</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label for="weight">Weight <span>Optional</span></label>
+                <div class="input-with-unit">
+                  <input id="weight" name="weight" type="number" min="25" max="350" inputmode="decimal" placeholder="70" />
+                  <span>kg</span>
+                </div>
+              </div>
+            </div>
+
+            <label class="consent-check">
+              <input id="consent" name="consent" type="checkbox" required />
+              <span class="custom-check" aria-hidden="true"></span>
+              <span>I understand this is a screening, not a diagnosis.</span>
+            </label>
+            <span class="field-error" id="consent-error"></span>
+
+            <button class="primary-button form-submit" type="submit">
+              Start the assessment
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen quiz-screen" id="quiz-screen" aria-labelledby="question-title">
+        <div class="quiz-topbar">
+          <button class="icon-button" id="exit-button" type="button" aria-label="Exit assessment">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+
+          <div class="progress-wrap">
+            <div class="progress-meta">
+              <span id="section-label">Heart & circulation</span>
+              <span id="progress-label">1 of 75</span>
+            </div>
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="75" aria-valuenow="1" aria-label="Assessment progress">
+              <span id="progress-fill"></span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="quiz-shell">
+          <article class="question-stage" aria-live="polite">
+            <div class="question-kicker">
+              <span id="question-number">Question 1</span>
+              <span class="sensitive-label is-hidden" id="sensitive-label">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2m-9 0h8a2 2 0 0 1 2 2v7H6v-7a2 2 0 0 1 2-2Z" /></svg>
+                Sensitive
+              </span>
+            </div>
+            <h2 id="question-title"></h2>
+            <p class="question-context" id="question-context"></p>
+
+            <aside class="miko-question-note" id="miko-question-note" aria-labelledby="miko-note-label">
+              <button class="miko-note-avatar" id="miko-note-avatar" type="button" aria-label="Ask Miko about this question" aria-describedby="miko-note-text">
+                <img src="assets/miko-buddy-crop.webp" alt="" />
+                <span aria-hidden="true"></span>
+              </button>
+              <div class="miko-note-copy">
+                <div class="miko-note-heading">
+                  <strong id="miko-note-label">Miko’s note</strong>
+                  <span>Tap Miko to ask</span>
+                </div>
+                <p id="miko-note-text"></p>
+              </div>
+            </aside>
+
+            <div class="options-list" id="options-list" role="radiogroup" aria-labelledby="question-title"></div>
+            <div class="followup-fields" id="followup-fields"></div>
+            <p class="answer-error is-hidden" id="answer-error" role="alert">Choose the answer that fits best before continuing.</p>
+
+            <div class="question-actions">
+              <button class="secondary-button" id="previous-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                Back
+              </button>
+              <button class="primary-button" id="next-button" type="button">
+                Continue
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            </div>
+
+          </article>
+
+          <aside class="guide-panel" id="guide-panel" aria-label="Chat with Miko">
+            <div class="guide-heading">
+              <div class="guide-avatar"><img src="assets/miko-buddy-crop.webp" alt="Miko, your wellness buddy" /></div>
+              <div>
+                <strong>Miko</strong>
+                <span><i></i> Your question guide</span>
+              </div>
+              <button class="icon-button guide-close" id="guide-close" type="button" aria-label="Close guide">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+              </button>
+            </div>
+
+            <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+
+            <div class="quick-prompts" id="quick-prompts">
+              <button type="button" data-prompt="meaning">What does this mean?</button>
+              <button type="button" data-prompt="why">Why do you ask?</button>
+              <button type="button" data-prompt="answer">How should I answer?</button>
+            </div>
+
+            <form class="chat-form" id="chat-form">
+              <label class="sr-only" for="chat-input">Ask Miko a question</label>
+              <input id="chat-input" type="text" maxlength="180" autocomplete="off" placeholder="Ask about this question…" />
+              <button type="submit" aria-label="Send message">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3-5-7-2Zm7 2 3-3" /></svg>
+              </button>
+            </form>
+            <p class="guide-boundary">Miko explains the assessment; Miko does not diagnose or give treatment advice.</p>
+          </aside>
+        </div>
+
+        <button class="guide-toggle" id="guide-toggle" type="button" aria-label="Ask Miko" aria-controls="guide-panel" aria-expanded="false">
+          <img src="assets/miko-buddy-crop.webp" alt="" />
+          <span><strong>Ask Miko</strong><small>Question help</small></span>
+        </button>
+      </section>
+
+      <section class="screen results-screen" id="results-screen" aria-labelledby="results-title">
+        <div class="results-shell">
+          <div class="results-hero">
+            <button class="back-link" id="results-home-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              Return home
+            </button>
+
+            <div class="results-intro">
+              <div>
+                <span class="results-eyebrow">Check-in complete</span>
+                <h2 id="results-title">Your lifestyle snapshot.</h2>
+                <p id="results-summary"></p>
+              </div>
+              <button class="results-miko" id="results-miko-button" type="button" data-open-miko aria-label="Ask Miko about your result">
+                <span>All done!</span>
+                <img src="assets/miko-buddy-crop.webp" alt="Miko, your wellness buddy, waving" />
+              </button>
+            </div>
+
+            <div class="score-layout">
+              <div class="score-ring" id="score-ring" aria-label="Lifestyle score">
+                <div><strong id="score-value">0</strong><span>/ 100</span></div>
+              </div>
+              <div class="score-copy">
+                <span class="result-badge" id="result-badge">Needs attention</span>
+                <h3 id="result-heading">A few areas deserve a closer look.</h3>
+                <p id="result-explanation"></p>
+              </div>
+            </div>
+
+          </div>
+
+          <section class="result-section" aria-labelledby="breakdown-title">
+            <div class="section-heading-row">
+              <div>
+                <h3 id="breakdown-title">Your health areas</h3>
+                <p class="breakdown-note">Lower-scoring areas appear first so you know where to focus.</p>
+              </div>
+              <button class="text-button" id="results-method-button" type="button">Scoring details</button>
+            </div>
+            <div class="category-list" id="category-list"></div>
+          </section>
+
+          <section class="result-section next-steps" aria-labelledby="next-steps-title">
+            <div class="next-steps-intro">
+              <h3 id="next-steps-title">Three next steps</h3>
+            </div>
+            <ol id="next-steps-list"></ol>
+          </section>
+
+          <div class="result-actions">
+            <button class="primary-button" id="download-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7v-7Z" /></svg>
+              Print or save as PDF
+            </button>
+            <button class="secondary-button" id="retake-button" type="button">Retake assessment</button>
+          </div>
+
+          <div class="clinical-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.1c0 4.7 3 8.4 7.5 9.9 4.5-1.5 7.5-5.2 7.5-9.9V6L12 3Zm0 5v4m0 3.2v.1" /></svg>
+            <p><strong>Important:</strong> This result is a screening signal, not a diagnosis. Discuss concerning answers or symptoms with a qualified healthcare professional.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="method-dialog" id="method-dialog">
+      <form method="dialog">
+        <button class="icon-button dialog-close" value="close" aria-label="Close scoring explanation">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </form>
+      <span class="eyebrow"><span></span> Clear by design</span>
+      <h2>How the assessment logic works</h2>
+      <div class="method-steps">
+        <div><span>01</span><p><strong>Each answer earns 3, 2, or 1.</strong> The most health-supportive answer receives 3, an uncertain or middle answer 2, and a risk answer 1.</p></div>
+        <div><span>02</span><p><strong>Most areas use a weighted average.</strong> A perfect area is “Very satisfactory”; 66% or higher is “Satisfactory”; below that is “Needs attention.”</p></div>
+        <div><span>03</span><p><strong>Safety-critical areas are stricter.</strong> Cardiac, exercise risk, severe stress symptoms/crisis, dependency, cancer, HIV, and safety can be flagged by one risk answer.</p></div>
+        <div><span>04</span><p><strong>The overall result has a safety gate.</strong> A score cannot be called satisfactory when cardiac, cancer, HIV, or safety contains a flagged risk answer.</p></div>
+      </div>
+      <div class="method-caveat">
+        <strong>Clinical safeguard</strong>
+        <p>The document also includes an older heart-attack percentage formula. This prototype does not present that as a modern medical prediction; doing so would require clinical validation and current medical oversight.</p>
+      </div>
+    </dialog>
+
+    <dialog class="exit-dialog" id="exit-dialog">
+      <form method="dialog">
+        <span class="exit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.1c0 4.7 3 8.4 7.5 9.9 4.5-1.5 7.5-5.2 7.5-9.9V6L12 3Z" /></svg>
+        </span>
+        <h2>Your progress is saved</h2>
+        <p>You can return to this device and pick up from the same question.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel">Keep going</button>
+          <button class="primary-button" id="confirm-exit-button" value="exit">Exit for now</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="miko-dialog" id="miko-dialog" aria-labelledby="miko-dialog-title">
+      <div class="miko-dialog-heading">
+        <div class="miko-dialog-avatar"><img src="assets/miko-buddy-crop.webp" alt="Miko" /></div>
+        <div>
+          <strong id="miko-dialog-title">Ask Miko</strong>
+          <span><i></i> Assessment guide</span>
+        </div>
+        <form method="dialog">
+          <button class="icon-button" value="close" aria-label="Close Miko chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </form>
+      </div>
+      <div class="miko-dialog-messages" id="miko-dialog-messages" aria-live="polite"></div>
+      <div class="miko-dialog-prompts" id="miko-dialog-prompts">
+        <button type="button" data-global-prompt="assessment">What is this assessment?</button>
+        <button type="button" data-global-prompt="privacy">Are my answers private?</button>
+        <button type="button" data-global-prompt="scoring">How does scoring work?</button>
+      </div>
+      <form class="miko-dialog-form" id="miko-dialog-form">
+        <label class="sr-only" for="miko-dialog-input">Ask Miko a question</label>
+        <input id="miko-dialog-input" type="text" maxlength="180" autocomplete="off" placeholder="Ask Miko…" />
+        <button type="submit" aria-label="Send message to Miko">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3-5-7-2Zm7 2 3-3" /></svg>
+        </button>
+      </form>
+      <p class="guide-boundary">Miko explains the assessment but does not diagnose or recommend treatment.</p>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="translation-status" id="translation-status" role="status" aria-live="polite" aria-hidden="true">
+      <span></span><strong>Changing language…</strong>
+    </div>
+
+    <script src="assessment-data.js"></script>
+    <script src="language.js"></script>
+    <script src="miko.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
