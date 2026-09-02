@@ -71,6 +71,8 @@ for (const categoryKey of ["cardiac", "fitness", "nutrition", "stress", "depende
   assert.match(appSource, new RegExp(`${categoryKey}: '<svg`), `results need a dedicated ${categoryKey} icon`);
 }
 assert.match(appSource, /class="category-icon category-icon--\$\{key\}"/, "result rows must render their category icon");
+assert.match(appSource, /new IntersectionObserver/, "health-area animations must begin when rows enter the viewport");
+assert.match(appSource, /entry\.target\.classList\.add\("is-visible"\)/, "visible health areas must activate their animation state");
 const expectedScripts = ["runtime.js", "assessment-data.js", "language.js", "miko-logic.js", "miko.js", "app.js"];
 let lastScriptIndex = -1;
 for (const script of expectedScripts) {

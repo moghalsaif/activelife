@@ -106,6 +106,7 @@
   let toastTimer;
   let buddyTimer;
   let questionChatBusy = false;
+  let categoryObserver;
 
   init();
 
@@ -739,7 +740,7 @@
         const meta = data.categories[key];
         const needsAttention = result.rating === "Needs attention";
         return `
-          <article class="category-row category-row--${key}${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${index * 55}ms">
+          <article class="category-row category-row--${key}${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${Math.min(index, 3) * 45}ms">
             <div class="category-heading">
               <div class="category-name">
                 <span class="category-icon category-icon--${key}" aria-hidden="true">${categoryIcon(key)}</span>
@@ -764,10 +765,36 @@
         `;
       }).join("");
 
+    setupCategoryAnimations();
+
     const steps = buildNextSteps(results);
     const stepLabels = ["Start here", "Build from there", "Review your pattern"];
     els.nextSteps.innerHTML = steps.map((step, index) => `<li style="--step-delay:${index * 90}ms"><span>0${index + 1}</span><div><strong>${stepLabels[index]}</strong><p>${escapeHtml(step)}</p></div></li>`).join("");
     window.PATHWAY_LANGUAGE?.refresh();
+  }
+
+  function setupCategoryAnimations() {
+    categoryObserver?.disconnect();
+    categoryObserver = null;
+    const rows = Array.from(els.categoryList.querySelectorAll(".category-row"));
+    els.categoryList.classList.remove("has-scroll-motion");
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || !("IntersectionObserver" in window)) {
+      rows.forEach((row) => row.classList.add("is-visible"));
+      return;
+    }
+
+    els.categoryList.classList.add("has-scroll-motion");
+    categoryObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        categoryObserver?.unobserve(entry.target);
+      });
+    }, { threshold: 0.18, rootMargin: "0px 0px -7% 0px" });
+
+    rows.forEach((row) => categoryObserver.observe(row));
   }
 
   function animateResultMetric(element, value, delay) {
