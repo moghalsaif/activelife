@@ -72,11 +72,17 @@
     soundButton: document.getElementById("sound-button"),
     resultsHome: document.getElementById("results-home-button"),
     resultsSummary: document.getElementById("results-summary"),
+    resultsMikoBubble: document.getElementById("results-miko-bubble"),
     scoreRing: document.getElementById("score-ring"),
     scoreValue: document.getElementById("score-value"),
     resultBadge: document.getElementById("result-badge"),
     resultHeading: document.getElementById("result-heading"),
     resultExplanation: document.getElementById("result-explanation"),
+    includedAreas: document.getElementById("included-areas-value"),
+    attentionAreas: document.getElementById("attention-areas-value"),
+    safetyGate: document.getElementById("safety-gate-value"),
+    scoreScale: document.getElementById("score-scale"),
+    mikoResultMessage: document.getElementById("miko-result-message"),
     categoryList: document.getElementById("category-list"),
     nextSteps: document.getElementById("next-steps-list"),
     download: document.getElementById("download-button"),
@@ -704,15 +710,27 @@
 
   function renderResults() {
     const results = calculateResults();
-    const needs = Object.values(results.categoryResults).filter((result) => result.included && result.rating === "Needs attention");
-    els.resultsSummary.textContent = `Based on your answers—not a diagnosis. ${needs.length ? `${needs.length} ${needs.length === 1 ? "area needs" : "areas need"} attention.` : "No health area was flagged."}`;
+    const included = Object.values(results.categoryResults).filter((result) => result.included);
+    const needs = included.filter((result) => result.rating === "Needs attention");
+    const answerCount = Object.keys(state.answers).length;
+    els.resultsSummary.textContent = `${answerCount} answers reviewed across ${included.length} scored health ${included.length === 1 ? "area" : "areas"}. ${needs.length ? `${needs.length} ${needs.length === 1 ? "area is" : "areas are"} prioritised below.` : "No health area was flagged."}`;
+    els.resultsMikoBubble.textContent = needs.length ? `${needs.length} ${needs.length === 1 ? "area" : "areas"} to unpack` : "Strong pattern!";
     animateResultScore(results.score);
     els.scoreRing.setAttribute("aria-label", `Lifestyle score ${results.score} out of 100, ${results.status}`);
+    els.scoreScale.style.setProperty("--score-position", `${results.score}%`);
+    els.scoreScale.style.setProperty("--score-ratio", String(results.score / 100));
+    els.scoreScale.setAttribute("aria-label", `Assessment score ${results.score} out of 100. Status: ${results.status}.`);
     els.resultBadge.textContent = results.status;
     els.resultBadge.dataset.status = results.status.toLowerCase().replaceAll(" ", "-");
     const copy = resultCopy(results);
     els.resultHeading.textContent = copy.heading;
     els.resultExplanation.textContent = copy.explanation;
+    animateResultMetric(els.includedAreas, included.length, 160);
+    animateResultMetric(els.attentionAreas, needs.length, 240);
+    els.attentionAreas.classList.toggle("is-flagged", needs.length > 0);
+    els.safetyGate.textContent = results.criticalClear ? "Clear" : "Follow up";
+    els.safetyGate.classList.toggle("is-flagged", !results.criticalClear);
+    els.mikoResultMessage.textContent = resultMikoCopy(results, needs);
 
     els.categoryList.innerHTML = Object.entries(results.categoryResults)
       .filter(([, result]) => result.included)
@@ -721,11 +739,14 @@
         const meta = data.categories[key];
         const needsAttention = result.rating === "Needs attention";
         return `
-          <div class="category-row${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${index * 45}ms">
+          <article class="category-row${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${index * 55}ms">
             <div class="category-heading">
               <div class="category-name">
                 <i aria-hidden="true"></i>
-                <span><strong>${escapeHtml(meta.shortLabel)}</strong></span>
+                <span>
+                  <strong>${escapeHtml(meta.label)}</strong>
+                  <small>${escapeHtml(meta.description)}</small>
+                </span>
               </div>
               <div class="category-status"><span aria-hidden="true">${needsAttention ? "!" : "✓"}</span>${escapeHtml(result.rating)}</div>
             </div>
@@ -733,14 +754,51 @@
               <div class="category-bar" role="img" aria-label="${escapeHtml(meta.shortLabel)} weighted answer score ${result.percent} percent"><span></span></div>
               <strong>${result.percent}%</strong>
             </div>
-          </div>
+            ${needsAttention ? `
+              <div class="category-action">
+                <span>${result.hasTechnicalRisk ? "Safety-sensitive answer" : "Suggested next step"}</span>
+                <p>${escapeHtml(meta.nextStep)}</p>
+              </div>
+            ` : ""}
+          </article>
         `;
       }).join("");
 
     const steps = buildNextSteps(results);
     const stepLabels = ["Start here", "Build from there", "Review your pattern"];
-    els.nextSteps.innerHTML = steps.map((step, index) => `<li><span>0${index + 1}</span><div><strong>${stepLabels[index]}</strong><p>${escapeHtml(step)}</p></div></li>`).join("");
+    els.nextSteps.innerHTML = steps.map((step, index) => `<li style="--step-delay:${index * 90}ms"><span>0${index + 1}</span><div><strong>${stepLabels[index]}</strong><p>${escapeHtml(step)}</p></div></li>`).join("");
     window.PATHWAY_LANGUAGE?.refresh();
+  }
+
+  function animateResultMetric(element, value, delay) {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || value === 0) {
+      element.textContent = String(value);
+      return;
+    }
+    element.textContent = "0";
+    window.setTimeout(() => {
+      const startedAt = performance.now();
+      const duration = 520;
+      const tick = (now) => {
+        const progress = clamp((now - startedAt) / duration, 0, 1);
+        const eased = 1 - Math.pow(1 - progress, 4);
+        element.textContent = String(Math.round(value * eased));
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, delay);
+  }
+
+  function resultMikoCopy(results, needs) {
+    if (!results.criticalClear) {
+      return "One or more safety-sensitive answers deserve appropriate professional follow-up. Start with the first action below; this result does not diagnose a condition.";
+    }
+    if (needs.length) {
+      const firstArea = data.categories[needs[0].key].label.toLowerCase();
+      return `Start with ${firstArea}. One manageable action this week is more useful than trying to change every area at once.`;
+    }
+    return "Your answers show a consistently health-supportive pattern. Keep the habits that are working and continue routine preventive care.";
   }
 
   function animateResultScore(score) {

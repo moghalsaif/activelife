@@ -48,7 +48,21 @@ assert.equal(guide.detectQuestionIntent("Why are you asking this?".toLowerCase()
 assert.ok(guide.responses.urgent.includes("emergency medical help"), "urgent guidance must direct users to emergency help");
 
 const html = await readFile(new URL("index.html", root), "utf8");
-for (const requiredId of ["welcome-screen", "profile-form", "quiz-screen", "results-screen", "miko-dialog", "clear-data-dialog", "privacy-dialog", "app-alert"]) {
+for (const requiredId of [
+  "welcome-screen",
+  "profile-form",
+  "quiz-screen",
+  "results-screen",
+  "included-areas-value",
+  "attention-areas-value",
+  "safety-gate-value",
+  "score-scale",
+  "miko-result-note",
+  "miko-dialog",
+  "clear-data-dialog",
+  "privacy-dialog",
+  "app-alert",
+]) {
   assert.match(html, new RegExp(`id=["']${requiredId}["']`), `index must include #${requiredId}`);
 }
 const expectedScripts = ["runtime.js", "assessment-data.js", "language.js", "miko-logic.js", "miko.js", "app.js"];

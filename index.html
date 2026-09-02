@@ -324,7 +324,7 @@
                 <p id="results-summary"></p>
               </div>
               <button class="results-miko" id="results-miko-button" type="button" data-open-miko aria-label="Ask Miko about your result">
-                <span>All done!</span>
+                <span id="results-miko-bubble">Let’s unpack it</span>
                 <img src="assets/miko-buddy-crop.webp" alt="Miko, your wellness buddy, waving" />
               </button>
             </div>
@@ -340,13 +340,54 @@
               </div>
             </div>
 
+            <div class="result-glance" aria-label="Your result at a glance">
+              <div>
+                <span>Areas included</span>
+                <strong id="included-areas-value">0</strong>
+                <small>of 9 scored health areas</small>
+              </div>
+              <div>
+                <span>Priority areas</span>
+                <strong id="attention-areas-value">0</strong>
+                <small>shown first below</small>
+              </div>
+              <div>
+                <span>Safety gate</span>
+                <strong id="safety-gate-value">Clear</strong>
+                <small>cardiac, cancer, HIV and safety checks</small>
+              </div>
+            </div>
+
+            <div class="score-scale" id="score-scale" aria-label="Your score on the assessment scale">
+              <div class="score-scale-track" aria-hidden="true">
+                <span class="score-scale-fill"></span>
+                <span class="score-marker"></span>
+              </div>
+              <div class="score-scale-labels" aria-hidden="true">
+                <span>Needs attention<br />Below 60</span>
+                <span>Fair<br />60–65</span>
+                <span>Satisfactory<br />66–99</span>
+                <span>Very satisfactory<br />100</span>
+              </div>
+              <p>This is a weighted screening score based on the source assessment. It is not a diagnosis or a percentage chance of illness.</p>
+            </div>
+
+            <button class="miko-result-note" id="miko-result-note" type="button" data-open-miko aria-label="Ask Miko to explain your result">
+              <img src="assets/miko-buddy-crop.webp" alt="" />
+              <p>
+                <strong>Miko’s take</strong>
+                <span id="miko-result-message">Start with one manageable action rather than trying to change everything at once.</span>
+                <small>Tap to ask Miko about scoring, privacy, or your next step.</small>
+              </p>
+            </button>
           </div>
 
           <section class="result-section" aria-labelledby="breakdown-title">
             <div class="section-heading-row">
               <div>
+                <span class="section-overline">Your pattern</span>
                 <h3 id="breakdown-title">Your health areas</h3>
-                <p class="breakdown-note">Lower-scoring areas appear first so you know where to focus.</p>
+                <p class="breakdown-note">Lower-scoring areas appear first. Each row explains the pattern and highlights a practical action when follow-up may help.</p>
               </div>
               <button class="text-button" id="results-method-button" type="button">Scoring details</button>
             </div>
@@ -355,7 +396,9 @@
 
           <section class="result-section next-steps" aria-labelledby="next-steps-title">
             <div class="next-steps-intro">
+              <span class="section-overline">A practical plan</span>
               <h3 id="next-steps-title">Three next steps</h3>
+              <p>Start at the top. Small, repeatable actions matter more than trying to fix every area today.</p>
             </div>
             <ol id="next-steps-list"></ol>
           </section>
