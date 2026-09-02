@@ -65,6 +65,12 @@ for (const requiredId of [
 ]) {
   assert.match(html, new RegExp(`id=["']${requiredId}["']`), `index must include #${requiredId}`);
 }
+
+const appSource = await readFile(new URL("app.js", root), "utf8");
+for (const categoryKey of ["cardiac", "fitness", "nutrition", "stress", "dependency", "cancer", "sensory", "hiv", "safety"]) {
+  assert.match(appSource, new RegExp(`${categoryKey}: '<svg`), `results need a dedicated ${categoryKey} icon`);
+}
+assert.match(appSource, /class="category-icon category-icon--\$\{key\}"/, "result rows must render their category icon");
 const expectedScripts = ["runtime.js", "assessment-data.js", "language.js", "miko-logic.js", "miko.js", "app.js"];
 let lastScriptIndex = -1;
 for (const script of expectedScripts) {

@@ -739,10 +739,10 @@
         const meta = data.categories[key];
         const needsAttention = result.rating === "Needs attention";
         return `
-          <article class="category-row${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${index * 55}ms">
+          <article class="category-row category-row--${key}${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${index * 55}ms">
             <div class="category-heading">
               <div class="category-name">
-                <i aria-hidden="true"></i>
+                <span class="category-icon category-icon--${key}" aria-hidden="true">${categoryIcon(key)}</span>
                 <span>
                   <strong>${escapeHtml(meta.label)}</strong>
                   <small>${escapeHtml(meta.description)}</small>
@@ -1045,6 +1045,21 @@
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function categoryIcon(key) {
+    const icons = {
+      cardiac: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.5 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>',
+      fitness: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
+      nutrition: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18 2 18 2c0 6-1 11-7 12"/><path pathLength="1" d="M3 21c0-3.2 1.9-5.7 6.8-6.9"/></svg>',
+      stress: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M3 8c2.5-2.4 5.5-2.4 8 0s5.5 2.4 10 0"/><path pathLength="1" d="M3 12c2.5-2.4 5.5-2.4 8 0s5.5 2.4 10 0"/><path pathLength="1" d="M3 16c2.5-2.4 5.5-2.4 8 0s5.5 2.4 10 0"/></svg>',
+      dependency: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="m9.2 14.8-2.1 2.1a4 4 0 0 1-5.7-5.6L5 7.8a4 4 0 0 1 5.6 0"/><path pathLength="1" d="m14.8 9.2 2.1-2.1a4 4 0 0 1 5.7 5.6L19 16.2a4 4 0 0 1-5.6 0"/><path pathLength="1" d="M8 12h8"/></svg>',
+      cancer: '<svg viewBox="0 0 24 24" focusable="false"><circle pathLength="1" cx="10.5" cy="10.5" r="6.5"/><path pathLength="1" d="m15.2 15.2 5 5"/><path pathLength="1" d="M10.5 7.8v5.4M7.8 10.5h5.4"/></svg>',
+      sensory: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7S2 12 2 12Z"/><circle pathLength="1" cx="12" cy="12" r="2.6"/></svg>',
+      hiv: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M9 3c0 4.4 6 9.1 9 18M15 3c0 4.4-6 9.1-9 18"/><path pathLength="1" d="M9 3c1.8 1.5 4.2 1.5 6 0"/></svg>',
+      safety: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M12 22s8-3.8 8-10V5l-8-3-8 3v7c0 6.2 8 10 8 10Z"/><path pathLength="1" d="m8.6 12 2.2 2.2 4.8-5"/></svg>',
+    };
+    return icons[key] || icons.safety;
   }
 
   function escapeHtml(value) {
