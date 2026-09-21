@@ -8,6 +8,64 @@
   }
 
   const STORAGE_KEY = "pathway-health-check-v1";
+  const EXERCISES = {
+    breathe: {
+      title: "Standing breathing reset",
+      motion: "breathe",
+      level: "Gentle",
+      dose: "2 minutes",
+      instruction: "Stand or sit tall. Let your arms rise as you breathe in comfortably, then lower them as you breathe out. Keep the breath easy and unforced.",
+    },
+    shoulders: {
+      title: "Supported shoulder rolls",
+      motion: "shoulders",
+      level: "Gentle",
+      dose: "6 slow circles",
+      instruction: "Sit or stand with support nearby. Roll both shoulders slowly back and down without forcing the range.",
+    },
+    ankle: {
+      title: "Seated ankle pumps",
+      motion: "ankle",
+      level: "Gentle",
+      dose: "10 each side",
+      instruction: "Sit securely with both feet supported. Lift your toes, lower them, then lift your heels using a comfortable range.",
+    },
+    march: {
+      title: "March in place",
+      motion: "march",
+      level: "Easy",
+      dose: "30 seconds",
+      instruction: "Stand tall near a stable support. Alternate lifting each knee at a comfortable pace while keeping your breathing relaxed.",
+    },
+    chair: {
+      title: "Chair sit-to-stand",
+      motion: "chair",
+      level: "Strength",
+      dose: "6–8 repetitions",
+      instruction: "Use a stable chair. Lean slightly forward, stand without rushing, then lower back with control. Use your hands if needed.",
+    },
+    wall: {
+      title: "Wall push-up",
+      motion: "wall",
+      level: "Strength",
+      dose: "6–10 repetitions",
+      instruction: "Place your hands on a wall at chest height. Bend your elbows to move closer, then press away while keeping your body long.",
+    },
+    sideStep: {
+      title: "Supported side steps",
+      motion: "side-step",
+      level: "Balance",
+      dose: "6 each way",
+      instruction: "Hold a stable surface lightly. Step sideways with control, bring your feet together, and repeat in the other direction.",
+    },
+    heelRaise: {
+      title: "Supported heel raises",
+      motion: "heel-raise",
+      level: "Strength",
+      dose: "8–12 repetitions",
+      instruction: "Hold a stable surface. Rise onto the balls of your feet, pause briefly, then lower your heels with control.",
+    },
+  };
   const screens = {
     welcome: document.getElementById("welcome-screen"),
     profile: document.getElementById("profile-screen"),
@@ -84,6 +142,9 @@
     scoreScale: document.getElementById("score-scale"),
     mikoResultMessage: document.getElementById("miko-result-message"),
     categoryList: document.getElementById("category-list"),
+    exerciseSummary: document.getElementById("exercise-summary"),
+    exerciseSafety: document.getElementById("exercise-safety-note"),
+    exerciseCatalog: document.getElementById("exercise-catalog"),
     nextSteps: document.getElementById("next-steps-list"),
     download: document.getElementById("download-button"),
     retake: document.getElementById("retake-button"),
@@ -106,7 +167,6 @@
   let toastTimer;
   let buddyTimer;
   let questionChatBusy = false;
-  let categoryObserver;
 
   init();
 
@@ -180,6 +240,7 @@
     });
     els.download.addEventListener("click", printSummary);
     els.retake.addEventListener("click", resetAssessment);
+    els.exerciseCatalog.addEventListener("click", handleExerciseMotionToggle);
 
     document.addEventListener("keydown", handleKeyboard);
     window.addEventListener("beforeunload", saveState);
@@ -736,24 +797,19 @@
     els.categoryList.innerHTML = Object.entries(results.categoryResults)
       .filter(([, result]) => result.included)
       .sort(([, a], [, b]) => a.points - b.points || a.percent - b.percent)
-      .map(([key, result], index) => {
+      .map(([key, result]) => {
         const meta = data.categories[key];
         const needsAttention = result.rating === "Needs attention";
         return `
-          <article class="category-row category-row--${key}${needsAttention ? " needs-attention" : ""}" style="--category-color:${meta.color}; --category-score:${result.percent}%; --row-delay:${Math.min(index, 3) * 45}ms">
+          <article class="category-row${needsAttention ? " needs-attention" : ""}">
             <div class="category-heading">
               <div class="category-name">
-                <span class="category-icon category-icon--${key}" aria-hidden="true">${categoryIcon(key)}</span>
                 <span>
                   <strong>${escapeHtml(meta.label)}</strong>
                   <small>${escapeHtml(meta.description)}</small>
                 </span>
               </div>
-              <div class="category-status"><span aria-hidden="true">${needsAttention ? "!" : "✓"}</span>${escapeHtml(result.rating)}</div>
-            </div>
-            <div class="category-score-line">
-              <div class="category-bar" role="img" aria-label="${escapeHtml(meta.shortLabel)} weighted answer score ${result.percent} percent"><span></span></div>
-              <strong>${result.percent}%</strong>
+              <div class="category-status"><strong>${result.percent}%</strong><span>${escapeHtml(result.rating)}</span></div>
             </div>
             ${needsAttention ? `
               <div class="category-action">
@@ -765,7 +821,7 @@
         `;
       }).join("");
 
-    setupCategoryAnimations();
+    renderExercisePlan(results);
 
     const steps = buildNextSteps(results);
     const stepLabels = ["Start here", "Build from there", "Review your pattern"];
@@ -773,28 +829,103 @@
     window.PATHWAY_LANGUAGE?.refresh();
   }
 
-  function setupCategoryAnimations() {
-    categoryObserver?.disconnect();
-    categoryObserver = null;
-    const rows = Array.from(els.categoryList.querySelectorAll(".category-row"));
-    els.categoryList.classList.remove("has-scroll-motion");
+  function renderExercisePlan(results) {
+    const plan = buildExercisePlan(results);
+    els.exerciseSummary.textContent = plan.summary;
+    els.exerciseSafety.textContent = plan.safety;
+    els.exerciseSafety.dataset.tone = plan.tone;
+    els.exerciseCatalog.innerHTML = plan.items.map(({ exercise, reason }, index) => `
+      <article class="exercise-card" style="--exercise-index:${index}">
+        <div class="motion-stage motion-${exercise.motion}">
+          <div class="motion-avatar" role="img" aria-label="Animated human demonstration of ${escapeHtml(exercise.title)}">
+            <span class="avatar-head"></span>
+            <span class="avatar-torso"></span>
+            <span class="avatar-limb avatar-arm avatar-arm-left"><i></i></span>
+            <span class="avatar-limb avatar-arm avatar-arm-right"><i></i></span>
+            <span class="avatar-limb avatar-leg avatar-leg-left"><i></i></span>
+            <span class="avatar-limb avatar-leg avatar-leg-right"><i></i></span>
+          </div>
+          <span class="motion-prop" aria-hidden="true"></span>
+          <span class="motion-floor" aria-hidden="true"></span>
+          <button class="motion-toggle" type="button" data-motion-toggle data-exercise-title="${escapeHtml(exercise.title)}" aria-pressed="false" aria-label="Pause ${escapeHtml(exercise.title)} demonstration">
+            <span>Pause motion</span>
+          </button>
+        </div>
+        <div class="exercise-copy">
+          <div class="exercise-meta"><span>${escapeHtml(exercise.level)}</span><span>${escapeHtml(exercise.dose)}</span></div>
+          <h4>${escapeHtml(exercise.title)}</h4>
+          <p>${escapeHtml(exercise.instruction)}</p>
+          <small><strong>Why it was selected:</strong> ${escapeHtml(reason)}</small>
+        </div>
+      </article>
+    `).join("");
+  }
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion || !("IntersectionObserver" in window)) {
-      rows.forEach((row) => row.classList.add("is-visible"));
-      return;
+  function buildExercisePlan(results) {
+    const answer = (id) => state.answers[id];
+    const cardiac = results.categoryResults.cardiac;
+    const fitness = results.categoryResults.fitness;
+    const stress = results.categoryResults.stress;
+    const dependency = results.categoryResults.dependency;
+    const maternityContext = answer(69) === "yes" || answer(71) === "yes";
+    const clearanceNeeded = Boolean(cardiac?.hasTechnicalRisk || fitness?.hasTechnicalRisk || maternityContext);
+
+    if (clearanceNeeded) {
+      return {
+        tone: "caution",
+        summary: "Your answers suggest that exercise may need individual guidance. These gentle demonstrations are conversation starters—not a prescription.",
+        safety: maternityContext
+          ? "Please confirm suitable movement with your maternity-care professional before starting. Stop if you feel pain, dizziness, bleeding, breathlessness beyond normal effort, or anything concerning."
+          : "Please get appropriate professional clearance before starting a new exercise routine. Stop immediately for chest pain, faintness, unusual breathlessness, or worsening symptoms.",
+        items: [
+          { exercise: EXERCISES.breathe, reason: "A low-intensity breathing pattern to discuss as a comfortable starting point." },
+          { exercise: EXERCISES.shoulders, reason: "A supported mobility example that does not require equipment." },
+          { exercise: EXERCISES.ankle, reason: "A seated lower-leg movement that can be demonstrated without a standing balance challenge." },
+        ],
+      };
     }
 
-    els.categoryList.classList.add("has-scroll-motion");
-    categoryObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("is-visible");
-        categoryObserver?.unobserve(entry.target);
-      });
-    }, { threshold: 0.18, rootMargin: "0px 0px -7% 0px" });
+    const selected = [];
+    const add = (key, reason) => {
+      if (!selected.some((item) => item.exercise === EXERCISES[key])) selected.push({ exercise: EXERCISES[key], reason });
+    };
 
-    rows.forEach((row) => categoryObserver.observe(row));
+    if (fitness?.rating === "Needs attention") {
+      add("march", "Movement and body was a lower-scoring area, so this begins with an equipment-free activity habit.");
+      add("chair", "This develops everyday leg strength using a stable chair for support.");
+      add("wall", "This offers a controlled upper-body strength option at an adjustable angle.");
+    }
+    if (stress?.rating === "Needs attention") {
+      add("breathe", "Stress and support was a lower-scoring area, so this adds a short calming practice.");
+      add("shoulders", "Slow shoulder movement can pair well with a brief recovery break.");
+    }
+    if (dependency?.rating === "Needs attention") {
+      add("march", "A short movement break can support a healthier daily routine while you seek appropriate support.");
+    }
+
+    add("sideStep", "Controlled side-to-side movement supports balance and movement variety.");
+    add("heelRaise", "This builds lower-leg strength with a stable support nearby.");
+    add("march", "A simple way to add short, repeatable activity without equipment.");
+    add("wall", "An adjustable strength movement that can begin with a very small range.");
+    add("breathe", "A brief recovery practice to finish the movement session calmly.");
+
+    return {
+      tone: "standard",
+      summary: "Your catalogue prioritises the movement and stress patterns in your assessment, then adds simple whole-body variety.",
+      safety: "Start gently and use a stable support when shown. Stop for pain, dizziness, chest discomfort, or unusual breathlessness, and seek qualified advice when needed.",
+      items: selected.slice(0, 4),
+    };
+  }
+
+  function handleExerciseMotionToggle(event) {
+    const button = event.target.closest("[data-motion-toggle]");
+    if (!button) return;
+    const card = button.closest(".exercise-card");
+    const paused = card.classList.toggle("is-paused");
+    const title = button.dataset.exerciseTitle;
+    button.setAttribute("aria-pressed", String(paused));
+    button.setAttribute("aria-label", `${paused ? "Play" : "Pause"} ${title} demonstration`);
+    button.querySelector("span").textContent = paused ? "Play motion" : "Pause motion";
   }
 
   function animateResultMetric(element, value, delay) {
@@ -1072,21 +1203,6 @@
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
-  }
-
-  function categoryIcon(key) {
-    const icons = {
-      cardiac: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.5 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>',
-      fitness: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
-      nutrition: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18 2 18 2c0 6-1 11-7 12"/><path pathLength="1" d="M3 21c0-3.2 1.9-5.7 6.8-6.9"/></svg>',
-      stress: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M3 8c2.5-2.4 5.5-2.4 8 0s5.5 2.4 10 0"/><path pathLength="1" d="M3 12c2.5-2.4 5.5-2.4 8 0s5.5 2.4 10 0"/><path pathLength="1" d="M3 16c2.5-2.4 5.5-2.4 8 0s5.5 2.4 10 0"/></svg>',
-      dependency: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="m9.2 14.8-2.1 2.1a4 4 0 0 1-5.7-5.6L5 7.8a4 4 0 0 1 5.6 0"/><path pathLength="1" d="m14.8 9.2 2.1-2.1a4 4 0 0 1 5.7 5.6L19 16.2a4 4 0 0 1-5.6 0"/><path pathLength="1" d="M8 12h8"/></svg>',
-      cancer: '<svg viewBox="0 0 24 24" focusable="false"><circle pathLength="1" cx="10.5" cy="10.5" r="6.5"/><path pathLength="1" d="m15.2 15.2 5 5"/><path pathLength="1" d="M10.5 7.8v5.4M7.8 10.5h5.4"/></svg>',
-      sensory: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7S2 12 2 12Z"/><circle pathLength="1" cx="12" cy="12" r="2.6"/></svg>',
-      hiv: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M9 3c0 4.4 6 9.1 9 18M15 3c0 4.4-6 9.1-9 18"/><path pathLength="1" d="M9 3c1.8 1.5 4.2 1.5 6 0"/></svg>',
-      safety: '<svg viewBox="0 0 24 24" focusable="false"><path pathLength="1" d="M12 22s8-3.8 8-10V5l-8-3-8 3v7c0 6.2 8 10 8 10Z"/><path pathLength="1" d="m8.6 12 2.2 2.2 4.8-5"/></svg>',
-    };
-    return icons[key] || icons.safety;
   }
 
   function escapeHtml(value) {

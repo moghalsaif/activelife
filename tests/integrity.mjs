@@ -58,6 +58,9 @@ for (const requiredId of [
   "safety-gate-value",
   "score-scale",
   "miko-result-note",
+  "exercise-summary",
+  "exercise-safety-note",
+  "exercise-catalog",
   "miko-dialog",
   "clear-data-dialog",
   "privacy-dialog",
@@ -67,12 +70,10 @@ for (const requiredId of [
 }
 
 const appSource = await readFile(new URL("app.js", root), "utf8");
-for (const categoryKey of ["cardiac", "fitness", "nutrition", "stress", "dependency", "cancer", "sensory", "hiv", "safety"]) {
-  assert.match(appSource, new RegExp(`${categoryKey}: '<svg`), `results need a dedicated ${categoryKey} icon`);
-}
-assert.match(appSource, /class="category-icon category-icon--\$\{key\}"/, "result rows must render their category icon");
-assert.match(appSource, /new IntersectionObserver/, "health-area animations must begin when rows enter the viewport");
-assert.match(appSource, /entry\.target\.classList\.add\("is-visible"\)/, "visible health areas must activate their animation state");
+assert.match(appSource, /function buildExercisePlan\(results\)/, "results must build a personalised exercise plan");
+assert.match(appSource, /data-motion-toggle/, "exercise demonstrations must include a motion control");
+assert.doesNotMatch(appSource, /category-icon/, "health-area result rows must not render decorative icons");
+assert.doesNotMatch(appSource, /category-bar/, "health-area result rows must not render progress bars");
 const expectedScripts = ["runtime.js", "assessment-data.js", "language.js", "miko-logic.js", "miko.js", "app.js"];
 let lastScriptIndex = -1;
 for (const script of expectedScripts) {
